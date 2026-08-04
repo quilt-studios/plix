@@ -33,9 +33,9 @@ else
 $(error Unsupported ARCH '$(ARCH)')
 endif
 
-C_SOURCES := kernel/main.c kernel/auralattice.c kernel/everyfile.c kernel/cli.c kernel/driver.c kernel/console.c
-RUST_SOURCES := kernel/auth.rs
-OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_SOURCES) $(ARCH_C)) $(patsubst %.rs,$(BUILD_DIR)/%.o,$(RUST_SOURCES)) $(BUILD_DIR)/$(ARCH_BOOT:.S=.o)
+C_SOURCES :=
+RUST_SOURCES := kernel/plix.rs
+OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_SOURCES) $(ARCH_C)) $(patsubst %.rs,$(BUILD_DIR)/%.a,$(RUST_SOURCES)) $(BUILD_DIR)/$(ARCH_BOOT:.S=.o)
 
 .PHONY: all clean check iso run run-serial
 all: $(KERNEL)
@@ -51,9 +51,9 @@ $(BUILD_DIR)/%.o: %.S
 	@mkdir -p $(dir $@)
 	$(CC) $(COMMON_CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.o: %.rs
+$(BUILD_DIR)/%.a: %.rs
 	@mkdir -p $(dir $@)
-	$(RUSTC) $(RUSTFLAGS) --target $(RUST_TARGET) --crate-type lib --emit=obj $< -o $@
+	$(RUSTC) $(RUSTFLAGS) --target $(RUST_TARGET) --crate-type staticlib $< -o $@
 
 iso: $(KERNEL) boot/grub/grub.cfg
 	@mkdir -p build/iso/boot/grub
@@ -73,10 +73,10 @@ endif
 run-serial: run
 
 check:
-	$(CC) $(COMMON_CFLAGS) -fsyntax-only $(C_SOURCES)
+	@if [ -n "$(C_SOURCES)" ]; then $(CC) $(COMMON_CFLAGS) -fsyntax-only $(C_SOURCES); fi
 	@mkdir -p build/tests
-	$(RUSTC) $(RUSTFLAGS) --crate-type lib --emit=obj kernel/auth.rs -o build/tests/auth.o
-	cc -std=c11 -Wall -Wextra -Werror -Iinclude tests/cli_check.c kernel/everyfile.c kernel/cli.c build/tests/auth.o kernel/driver.c kernel/console.c -o build/tests/cli_check
+	$(RUSTC) $(RUSTFLAGS) --crate-type staticlib kernel/plix.rs -o build/tests/libplix.a
+	cc -std=c11 -Wall -Wextra -Werror -Iinclude tests/cli_check.c tests/console_putc.c tests/halt_stub.c build/tests/libplix.a -o build/tests/cli_check
 	build/tests/cli_check
 	@for arch in x86_64 aarch64 riscv64; do \
 		test -f arch/$$arch/boot.S || exit 1; \
