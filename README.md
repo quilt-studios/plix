@@ -16,7 +16,7 @@ make ARCH=aarch64
 make ARCH=riscv64
 ```
 
-The default build directory is `build/`. Cross compilers can be overridden with `CC`, `LD`, `OBJCOPY`, and `OBJDUMP`.
+The default build directory is `build/`. Cross compilers can be overridden with `CC`, `LD`, `OBJCOPY`, and `OBJDUMP`. A Rust compiler is also used for kernel components such as authentication; override it with `RUSTC`, and install or override the per-architecture `RUST_TARGET` (`x86_64-unknown-none`, `aarch64-unknown-none`, or `riscv64gc-unknown-none-elf`).
 
 ## Boot
 
