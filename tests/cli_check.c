@@ -1,4 +1,6 @@
+#include <plix/boot.h>
 #include <plix/cli.h>
+#include <plix/driver.h>
 
 static int contains(const char *haystack, const char *needle) {
     for (unsigned long i = 0; haystack[i] != '\0'; ++i) {
@@ -14,6 +16,8 @@ static int contains(const char *haystack, const char *needle) {
 }
 
 int main(void) {
+    plix_driver_init_arch(PLIX_ARCH_X86_64);
+
     plix_cli_t cli;
     plix_cli_init(&cli);
 
@@ -38,20 +42,26 @@ int main(void) {
     if (!contains(plix_cli_output(&cli), "welcome")) {
         return 7;
     }
-    if (plix_cli_execute(&cli, "pudo guest show") == 0) {
+    if (plix_cli_execute(&cli, "drivers") != 0) {
         return 8;
     }
+    if (!contains(plix_cli_output(&cli), "linux-8250-serial") || !contains(plix_cli_output(&cli), "console")) {
+        return 13;
+    }
+    if (plix_cli_execute(&cli, "pudo guest show") == 0) {
+        return 14;
+    }
     if (plix_cli_execute(&cli, "login root plixroot") != 0) {
-        return 9;
+        return 15;
     }
     if (!contains(plix_cli_output(&cli), "angemeldet als root")) {
-        return 10;
+        return 16;
     }
     if (plix_cli_execute(&cli, "pudo plixroot show") != 0) {
-        return 11;
+        return 17;
     }
     if (!contains(plix_cli_output(&cli), "pudo erlaubt")) {
-        return 12;
+        return 18;
     }
     return 0;
 }
