@@ -1,5 +1,6 @@
 #include <plix/auralattice.h>
 #include <plix/boot.h>
+#include <plix/cli.h>
 
 static plix_auralattice_t fabric;
 volatile uint64_t plix_last_boot_arch;
@@ -18,6 +19,8 @@ void plix_kernel_main(const plix_boot_info_t *boot_info) {
     (void)plix_auralattice_emit(&fabric, &first_pulse);
     plix_last_boot_arch = boot_info->arch;
     plix_boot_pulses = fabric.realms[0].pulse_count;
+
+    plix_cli_boot();
 
     plix_halt_forever();
 }

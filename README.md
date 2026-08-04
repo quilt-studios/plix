@@ -39,3 +39,22 @@ qemu-system-riscv64 -machine virt -nographic -kernel build/riscv64/plix.elf
 ```sh
 make check
 ```
+
+
+## Plix CLI
+
+After the architecture-specific boot handoff, the kernel initializes the Plix CLI on top of the `everyfile` filesystem. Commands always have a full and short spelling where applicable:
+
+- `goto` / `gt`: go to a directory, replacing `cd`.
+- `show` / `sw`: show directory entries, replacing `ls`.
+- `pudo`: power-user do, the Plix administrative command prefix replacing `sudo`.
+
+`everyfile` is user-centric. Every user owns a full tree below `/users/<name>/`; global configuration is under `main` instead of `etc`, and personal files are under `house` instead of `home`. Each known user gets `main` and `house`; the authenticated boot session starts in `/users/guest`, and `root` can be reached with `login root plixroot`.
+
+## Users and passwords
+
+The boot session starts as `guest` in `/users/guest`. Use `login <user> <password>` to switch users. The prototype ships with `guest` / `guest` and power user `root` / `plixroot`. Passwords are stored as salted FNV-1a hashes in the kernel image rather than plaintext. `pudo <password> <command>` only succeeds for an authenticated power user with the correct password.
+
+## QEMU
+
+The kernel writes CLI boot output to the QEMU-friendly debug console for each architecture: COM1 serial on x86_64, PL011 UART0 on `virt` AArch64, and NS16550 UART0 on `virt` RISC-V. The Makefile provides `run` and `run-serial` targets so the same build can be launched directly in QEMU once the matching emulator is installed.
