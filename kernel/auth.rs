@@ -1,5 +1,3 @@
-#![no_std]
-
 use core::ffi::{c_char, c_int};
 
 const FNV_OFFSET: u64 = 1_469_598_103_934_665_603;
@@ -118,7 +116,8 @@ pub unsafe extern "C" fn plix_auth_check_password(
     if user.is_null() {
         return 0;
     }
-    ((*user).password_hash == plix_auth_hash_password((*user).name, password, (*user).salt)) as c_int
+    ((*user).password_hash == plix_auth_hash_password((*user).name, password, (*user).salt))
+        as c_int
 }
 
 #[no_mangle]
