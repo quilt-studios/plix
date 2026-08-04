@@ -55,6 +55,16 @@ After the architecture-specific boot handoff, the kernel initializes the Plix CL
 
 The boot session starts as `guest` in `/users/guest`. Use `login <user> <password>` to switch users. The prototype ships with `guest` / `guest` and power user `root` / `plixroot`. Passwords are stored as salted FNV-1a hashes in the kernel image rather than plaintext. `pudo <password> <command>` only succeeds for an authenticated power user with the correct password.
 
+## Linux driver support
+
+Plix now has a small in-kernel driver registry that follows Linux-style device-driver matching: architecture boot code selects platform/MMIO/PIO devices, registers a compatible console driver, and exposes the loaded drivers through the CLI. The first supported Linux-compatible drivers are:
+
+- `linux-8250-serial` for the x86_64 COM1/8250-compatible serial port.
+- `linux-amba-pl011` for the AArch64 `virt` AMBA PL011 UART.
+- `linux-8250-mmio` for the RISC-V `virt` MMIO 8250-compatible UART.
+
+Use `drivers` or `drv` in the Plix CLI to list initialized drivers with their bus and class.
+
 ## QEMU
 
 The kernel writes CLI boot output to the QEMU-friendly debug console for each architecture: COM1 serial on x86_64, PL011 UART0 on `virt` AArch64, and NS16550 UART0 on `virt` RISC-V. The Makefile provides `run` and `run-serial` targets so the same build can be launched directly in QEMU once the matching emulator is installed.

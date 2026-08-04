@@ -28,7 +28,7 @@ else
 $(error Unsupported ARCH '$(ARCH)')
 endif
 
-C_SOURCES := kernel/main.c kernel/auralattice.c kernel/everyfile.c kernel/cli.c kernel/auth.c kernel/console.c
+C_SOURCES := kernel/main.c kernel/auralattice.c kernel/everyfile.c kernel/cli.c kernel/auth.c kernel/driver.c kernel/console.c
 OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_SOURCES) $(ARCH_C)) $(BUILD_DIR)/$(ARCH_BOOT:.S=.o)
 
 .PHONY: all clean check iso run run-serial
@@ -65,7 +65,7 @@ run-serial: run
 check:
 	$(CC) $(COMMON_CFLAGS) -fsyntax-only $(C_SOURCES)
 	@mkdir -p build/tests
-	cc -std=c11 -Wall -Wextra -Werror -Iinclude tests/cli_check.c kernel/everyfile.c kernel/cli.c kernel/auth.c kernel/console.c -o build/tests/cli_check
+	cc -std=c11 -Wall -Wextra -Werror -Iinclude tests/cli_check.c kernel/everyfile.c kernel/cli.c kernel/auth.c kernel/driver.c kernel/console.c -o build/tests/cli_check
 	build/tests/cli_check
 	@for arch in x86_64 aarch64 riscv64; do \
 		test -f arch/$$arch/boot.S || exit 1; \

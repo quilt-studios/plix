@@ -1,6 +1,7 @@
 #include <plix/cli.h>
 #include <plix/auth.h>
 #include <plix/console.h>
+#include <plix/driver.h>
 #include <plix/everyfile.h>
 
 static plix_everyfile_t fs;
@@ -132,6 +133,27 @@ int plix_cli_execute(plix_cli_t *cli, const char *line) {
         return 0;
     }
 
+
+    if (token_is(command, command_len, "drivers") || token_is(command, command_len, "drv")) {
+        size_t count = plix_driver_count();
+        if (count == 0u) {
+            append(cli, "keine linux treiber geladen\n");
+            return 0;
+        }
+        for (size_t i = 0; i < count; ++i) {
+            const plix_driver_t *driver = plix_driver_get(i);
+            if (driver != 0) {
+                append(cli, driver->name);
+                append(cli, " ");
+                append(cli, plix_driver_bus_name(driver->bus));
+                append(cli, " ");
+                append(cli, plix_driver_class_name(driver->device_class));
+                append(cli, "\n");
+            }
+        }
+        return 0;
+    }
+
     if (token_is(command, command_len, "pudo")) {
         const char *password = argument;
         size_t password_len = token_len(password);
@@ -166,5 +188,6 @@ const char *plix_cli_output(const plix_cli_t *cli) {
 
 void plix_cli_boot(void) {
     plix_cli_init(&boot_cli);
+    (void)plix_cli_execute(&boot_cli, "drivers");
     (void)plix_cli_execute(&boot_cli, "show");
 }
