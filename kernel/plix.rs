@@ -22,5 +22,7 @@ mod console;
 mod driver;
 #[path = "everyfile.rs"]
 mod everyfile;
+#[path = "memory.rs"]
+mod memory;
 #[path = "main.rs"]
 mod main;
