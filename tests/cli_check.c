@@ -24,26 +24,38 @@ int main(void) {
     if (!contains(plix_cli_output(&cli), "/users/guest")) {
         return 1;
     }
-    if (plix_cli_execute(&cli, "show") != 0) {
+    if (!contains(plix_cli_output(&cli), "use help for commands")) {
         return 2;
     }
-    if (!contains(plix_cli_output(&cli), "main") || !contains(plix_cli_output(&cli), "house")) {
+    if (plix_cli_execute(&cli, "help") != 0 || !contains(plix_cli_output(&cli), "pwd/pw")) {
         return 3;
     }
-    if (plix_cli_execute(&cli, "gt house") != 0) {
+    if (plix_cli_execute(&cli, "pwd") != 0 || !contains(plix_cli_output(&cli), "/users/guest")) {
         return 4;
     }
-    if (!contains(plix_cli_output(&cli), "/users/guest/house")) {
+    if (plix_cli_execute(&cli, "status") != 0 || !contains(plix_cli_output(&cli), "user=guest")) {
         return 5;
     }
-    if (plix_cli_execute(&cli, "sw") != 0) {
+    if (plix_cli_execute(&cli, "show") != 0) {
         return 6;
     }
-    if (!contains(plix_cli_output(&cli), "welcome")) {
+    if (!contains(plix_cli_output(&cli), "main") || !contains(plix_cli_output(&cli), "house")) {
         return 7;
     }
-    if (plix_cli_execute(&cli, "drivers") != 0) {
+    if (plix_cli_execute(&cli, "gt house") != 0) {
         return 8;
+    }
+    if (!contains(plix_cli_output(&cli), "/users/guest/house")) {
+        return 9;
+    }
+    if (plix_cli_execute(&cli, "sw") != 0) {
+        return 10;
+    }
+    if (!contains(plix_cli_output(&cli), "welcome")) {
+        return 11;
+    }
+    if (plix_cli_execute(&cli, "drivers") != 0) {
+        return 12;
     }
     if (!contains(plix_cli_output(&cli), "linux-8250-serial") || !contains(plix_cli_output(&cli), "console")) {
         return 13;
@@ -57,11 +69,20 @@ int main(void) {
     if (!contains(plix_cli_output(&cli), "angemeldet als root")) {
         return 16;
     }
-    if (plix_cli_execute(&cli, "pudo plixroot show") != 0) {
+    if (plix_cli_execute(&cli, "who") != 0 || !contains(plix_cli_output(&cli), "root")) {
         return 17;
     }
-    if (!contains(plix_cli_output(&cli), "pudo erlaubt")) {
+    if (plix_cli_execute(&cli, "pudo plixroot show") != 0) {
         return 18;
+    }
+    if (!contains(plix_cli_output(&cli), "pudo erlaubt")) {
+        return 19;
+    }
+    if (plix_cli_execute(&cli, "definitely-not-a-command") == 0) {
+        return 20;
+    }
+    if (!contains(plix_cli_output(&cli), "nutze help")) {
+        return 21;
     }
     return 0;
 }
