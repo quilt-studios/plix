@@ -16,7 +16,27 @@ make ARCH=aarch64
 make ARCH=riscv64
 ```
 
-The default build directory is `build/`. Cross compilers can be overridden with `CC`, `LD`, `OBJCOPY`, and `OBJDUMP`. A Rust compiler is also used for kernel components such as authentication; override it with `RUSTC`, and install or override the per-architecture `RUST_TARGET` (`x86_64-unknown-none`, `aarch64-unknown-none`, or `riscv64gc-unknown-none-elf`).
+The default build directory is `build/`. Cross compilers can be overridden with `CC` and `LD`. A Rust compiler is used for the freestanding kernel components; override it with `RUSTC`, and install or override the per-architecture `RUST_TARGET` (`x86_64-unknown-none`, `aarch64-unknown-none`, or `riscv64gc-unknown-none-elf`).
+
+## Automated checks
+
+The repository now runs GitHub Actions on pushes to `main` and on pull requests. CI executes the host regression suite and builds the x86_64 kernel ELF with the freestanding Rust target.
+
+Run the same host checks locally with:
+
+```sh
+make check
+```
+
+The check target is split into:
+
+```sh
+make check-rust
+make check-host
+make check-tree
+```
+
+`check-host` builds the Rust kernel library for the host and links the CLI regression test. `check-tree` verifies that the architecture entry points, consoles, linker script, GRUB config, and public headers are present.
 
 ## Boot
 
@@ -29,13 +49,13 @@ make ARCH=x86_64 iso
 qemu-system-x86_64 -cdrom build/plix-x86_64.iso -serial stdio -display none
 ```
 
-Or use the convenience target, which builds the GRUB ISO and boots that exact image:
+Or use the convenience target:
 
 ```sh
 make ARCH=x86_64 run
 ```
 
-The ISO target checks the generated ELF with `grub-file --is-x86-multiboot2` before creating the image. This avoids the previous `run` path that attempted to pass a Multiboot2 kernel directly to QEMU's `-kernel` loader.
+The ISO target checks the generated ELF with `grub-file --is-x86-multiboot2` before creating the image.
 
 ### AArch64 and RISC-V
 
@@ -53,29 +73,36 @@ make ARCH=aarch64 run
 make ARCH=riscv64 run
 ```
 
-## Checks
-
-```sh
-make check
-```
-
 ## Plix CLI
 
-After the architecture-specific boot handoff, the kernel initializes the Plix CLI on top of the `everyfile` filesystem. Commands always have a full and short spelling where applicable:
+After the architecture-specific boot handoff, the kernel initializes the Plix CLI on top of the `everyfile` filesystem. The boot transcript now includes status, loaded drivers, and the current directory listing.
 
-- `goto` / `gt`: go to a directory, replacing `cd`.
+Available commands:
+
+- `help` / `?`: show the command overview.
+- `pwd` / `pw`: show the current Everyfile path.
+- `status` / `st`: show the active user, current path, and loaded-driver count marker.
+- `who`: show the active user.
+- `goto` / `gt <path>`: move to a directory, replacing `cd`.
 - `show` / `sw`: show directory entries, replacing `ls`.
-- `pudo`: power-user do, the Plix administrative command prefix replacing `sudo`.
+- `drivers` / `drv`: list initialized drivers with bus and class.
+- `login <user> <password>`: switch the active prototype user.
+- `pudo <password> <command>`: validate power-user authorization for a command request.
 
-`everyfile` is user-centric. Every user owns a full tree below `/users/<name>/`; global configuration is under `main` instead of `etc`, and personal files are under `house` instead of `home`. Each known user gets `main` and `house`; the authenticated boot session starts in `/users/guest`, and `root` can be reached with `login root plixroot`.
+`everyfile` is user-centric. Every user owns a tree below `/users/<name>/`; global configuration is under `main` instead of `etc`, and personal files are under `house` instead of `home`. Each known user gets `main` and `house`; the boot session starts in `/users/guest`.
 
-## Users and passwords
+## Authentication prototype
 
-The boot session starts as `guest` in `/users/guest`. Use `login <user> <password>` to switch users. The prototype ships with `guest` / `guest` and power user `root` / `plixroot`. Passwords are stored as salted FNV-1a hashes in the kernel image rather than plaintext. `pudo <password> <command>` only succeeds for an authenticated power user with the correct password.
+The current authentication layer is intentionally small and is **not production security**. It ships with fixed prototype users and salted FNV-1a password hashes embedded in the kernel image. This is suitable for exercising privilege and session flows during kernel development, but it should be replaced before Plix is used for real security boundaries.
 
-## Linux driver support
+The current test users are:
 
-Plix now has a small in-kernel driver registry that follows Linux-style device-driver matching: architecture boot code selects platform/MMIO/PIO devices, registers a compatible console driver, and exposes the loaded drivers through the CLI. The first supported Linux-compatible drivers are:
+- `guest` / `guest`
+- power user `root` / `plixroot`
+
+## Linux-style driver registry
+
+Plix has a small in-kernel driver registry using platform/MMIO/PIO metadata and compatible identifiers. The first console drivers are:
 
 - `linux-8250-serial` for the x86_64 COM1/8250-compatible serial port.
 - `linux-amba-pl011` for the AArch64 `virt` AMBA PL011 UART.
@@ -83,6 +110,16 @@ Plix now has a small in-kernel driver registry that follows Linux-style device-d
 
 Use `drivers` or `drv` in the Plix CLI to list initialized drivers with their bus and class.
 
-## QEMU
+## Console output
 
-The kernel writes CLI boot output to the QEMU-friendly debug console for each architecture: COM1 serial on x86_64, PL011 UART0 on `virt` AArch64, and NS16550 UART0 on `virt` RISC-V. The Makefile provides `run` and `run-serial` targets so the same build can be launched directly in QEMU once the matching emulator is installed.
+The kernel writes boot and CLI output to QEMU-friendly architecture consoles:
+
+- x86_64: COM1 serial.
+- AArch64: PL011 UART0 on `virt`.
+- RISC-V: NS16550 UART0 on `virt`.
+
+The `run` and `run-serial` targets launch the matching QEMU path when the required toolchain and emulator are installed.
+
+## Project status
+
+Plix is still a kernel prototype rather than a complete general-purpose operating system. Current emphasis is on a consistent cross-architecture boot contract, Auralattice messaging, Everyfile semantics, authentication experiments, a minimal CLI, driver discovery, and reproducible automated checks.
