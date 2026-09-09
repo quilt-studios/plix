@@ -38,7 +38,7 @@ C_SOURCES :=
 RUST_SOURCES := kernel/plix.rs
 OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_SOURCES) $(ARCH_C)) $(patsubst %.rs,$(BUILD_DIR)/%.a,$(RUST_SOURCES)) $(BUILD_DIR)/$(ARCH_BOOT:.S=.o)
 
-.PHONY: all clean check iso run run-serial
+.PHONY: all clean check check-rust check-host check-tree iso run run-serial
 all: $(KERNEL)
 
 $(KERNEL): $(OBJECTS) linker.ld
@@ -82,15 +82,30 @@ endif
 
 run-serial: run
 
-check:
-	@if [ -n "$(C_SOURCES)" ]; then $(CC) $(COMMON_CFLAGS) -fsyntax-only $(C_SOURCES); fi
+check-rust:
 	@mkdir -p build/tests
 	$(RUSTC) $(RUSTFLAGS) --crate-type staticlib kernel/plix.rs -o build/tests/libplix.a
+
+check-host: check-rust
 	cc -std=c11 -Wall -Wextra -Werror -Iinclude tests/cli_check.c tests/console_putc.c tests/halt_stub.c build/tests/libplix.a -o build/tests/cli_check
 	build/tests/cli_check
+
+check-tree:
 	@for arch in x86_64 aarch64 riscv64; do \
 		test -f arch/$$arch/boot.S || exit 1; \
+		test -f arch/$$arch/console.c || exit 1; \
 	done
+	@test -f boot/grub/grub.cfg
+	@test -f linker.ld
+	@test -f include/plix/boot.h
+	@test -f include/plix/cli.h
+	@test -f include/plix/console.h
+	@test -f include/plix/driver.h
+	@test -f include/plix/auth.h
+	@test -f include/plix/everyfile.h
+	@test -f include/plix/auralattice.h
+
+check: check-host check-tree
 
 clean:
 	rm -rf build
