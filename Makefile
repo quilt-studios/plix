@@ -1,6 +1,7 @@
 ARCH ?= x86_64
 BUILD_DIR ?= build/$(ARCH)
 KERNEL := $(BUILD_DIR)/plix.elf
+ISO := build/plix-x86_64.iso
 
 COMMON_CFLAGS := -std=c11 -ffreestanding -fno-stack-protector -fno-pic -fno-pie -Wall -Wextra -Werror -Iinclude
 RUSTC ?= rustc
@@ -56,17 +57,26 @@ $(BUILD_DIR)/%.a: %.rs
 	$(RUSTC) $(RUSTFLAGS) --target $(RUST_TARGET) --crate-type staticlib $< -o $@
 
 iso: $(KERNEL) boot/grub/grub.cfg
+ifeq ($(ARCH),x86_64)
 	@mkdir -p build/iso/boot/grub
 	cp $(KERNEL) build/iso/boot/plix.elf
 	cp boot/grub/grub.cfg build/iso/boot/grub/grub.cfg
-	grub-mkrescue -o build/plix-$(ARCH).iso build/iso
+	grub-file --is-x86-multiboot2 $(KERNEL)
+	grub-mkrescue -o $(ISO) build/iso
+else
+	@echo "ISO boot is currently supported only for ARCH=x86_64" >&2
+	@exit 1
+endif
 
-run: $(KERNEL)
+run:
 ifeq ($(ARCH),x86_64)
-	qemu-system-x86_64 -kernel $(KERNEL) -serial stdio -display none
+	$(MAKE) ARCH=x86_64 iso
+	qemu-system-x86_64 -cdrom $(ISO) -serial stdio -display none -no-reboot -no-shutdown
 else ifeq ($(ARCH),aarch64)
+	$(MAKE) $(KERNEL)
 	qemu-system-aarch64 -machine virt -cpu cortex-a57 -nographic -kernel $(KERNEL)
 else ifeq ($(ARCH),riscv64)
+	$(MAKE) $(KERNEL)
 	qemu-system-riscv64 -machine virt -nographic -kernel $(KERNEL)
 endif
 
