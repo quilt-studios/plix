@@ -20,18 +20,37 @@ The default build directory is `build/`. Cross compilers can be overridden with 
 
 ## Boot
 
-For x86_64, install GRUB tooling and run:
+### x86_64
+
+The x86_64 kernel uses a Multiboot2 header and is booted through GRUB. Install GRUB rescue-image tooling, xorriso, and QEMU, then run:
 
 ```sh
 make ARCH=x86_64 iso
-qemu-system-x86_64 -cdrom build/plix-x86_64.iso
+qemu-system-x86_64 -cdrom build/plix-x86_64.iso -serial stdio -display none
 ```
 
-For AArch64 and RISC-V, the generated ELF is suitable for direct firmware or QEMU loading once the matching cross toolchain and emulator are installed:
+Or use the convenience target, which builds the GRUB ISO and boots that exact image:
+
+```sh
+make ARCH=x86_64 run
+```
+
+The ISO target checks the generated ELF with `grub-file --is-x86-multiboot2` before creating the image. This avoids the previous `run` path that attempted to pass a Multiboot2 kernel directly to QEMU's `-kernel` loader.
+
+### AArch64 and RISC-V
+
+The generated ELF is suitable for direct firmware or QEMU loading once the matching cross toolchain and emulator are installed:
 
 ```sh
 qemu-system-aarch64 -machine virt -cpu cortex-a57 -nographic -kernel build/aarch64/plix.elf
 qemu-system-riscv64 -machine virt -nographic -kernel build/riscv64/plix.elf
+```
+
+The same commands are available through:
+
+```sh
+make ARCH=aarch64 run
+make ARCH=riscv64 run
 ```
 
 ## Checks
@@ -39,7 +58,6 @@ qemu-system-riscv64 -machine virt -nographic -kernel build/riscv64/plix.elf
 ```sh
 make check
 ```
-
 
 ## Plix CLI
 
